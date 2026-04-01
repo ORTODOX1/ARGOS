@@ -45,6 +45,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Seconds between inspection cycles (default: 5.0)",
     )
     parser.add_argument(
+        "--lat", type=float, default=45.4315,
+        help="GPS latitude of the inspection robot (default: 45.4315)",
+    )
+    parser.add_argument(
+        "--lon", type=float, default=12.3456,
+        help="GPS longitude of the inspection robot (default: 12.3456)",
+    )
+    parser.add_argument(
         "--log-level", default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Logging verbosity (default: INFO)",
@@ -79,8 +87,9 @@ async def run(args: argparse.Namespace) -> None:
         logger.info("Starting in REPLAY mode from %s", args.replay_file)
 
     await engine.run_continuous(
-        gps_lat=45.4315, gps_lon=12.3456,
+        gps_lat=args.lat, gps_lon=args.lon,
         interval_s=args.interval,
+        mode=args.mode,
     )
 
 

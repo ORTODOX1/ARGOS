@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Sequence
 
+import cv2
 import numpy as np
 import onnxruntime as ort
 
@@ -85,8 +86,6 @@ class DefectDetector:
 
     def preprocess(self, frame: np.ndarray) -> np.ndarray:
         """Resize, normalise, and transpose a BGR frame to NCHW float32."""
-        import cv2
-
         h, w = self._cfg.input_size
         resized = cv2.resize(frame, (w, h))
         blob = resized.astype(np.float32) / 255.0

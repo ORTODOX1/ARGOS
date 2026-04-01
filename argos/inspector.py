@@ -78,7 +78,7 @@ class InspectionEngine:
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.settings.camera.height)
         ret, frame = cap.read()
         cap.release()
-        if not ret:
+        if not ret or frame is None:
             raise RuntimeError("Camera capture failed")
         return frame
 

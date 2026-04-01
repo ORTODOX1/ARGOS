@@ -12,7 +12,7 @@ import datetime as dt
 import json
 import uuid
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import Any, NoReturn
 
 from argos.vision.classifier import ClassifiedDefect
 
@@ -112,13 +112,13 @@ class ReportGenerator:
             sensor_context=sensor_context,
         )
 
-    def render_pdf(self, report: InspectionReport, output_path: str) -> str:
+    def render_pdf(self, report: InspectionReport, output_path: str) -> NoReturn:
         """Stub: render the report as a PDF document.
 
         A production implementation would use ReportLab or LaTeX to
         produce a print-ready inspection certificate.
 
-        Returns the output file path.
+        Always raises ``NotImplementedError`` until a backend is integrated.
         """
         # TODO: integrate ReportLab for PDF generation
         raise NotImplementedError(

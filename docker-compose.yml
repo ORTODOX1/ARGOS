@@ -10,8 +10,8 @@ services:
       ARGOS_NEO4J_URI: bolt://neo4j:7687
       ARGOS_NEO4J_USER: neo4j
       ARGOS_NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
-      ARGOS_SYNIZ__WS_ENDPOINT: wss://syniz-backend:8443/v1/ws
-      ARGOS_EDGE__EXECUTION_PROVIDER: CPUExecutionProvider
+      ARGOS_SYNIZ_WS_ENDPOINT: wss://syniz-backend:8443/v1/ws
+      ARGOS_EDGE_EXECUTION_PROVIDER: CPUExecutionProvider
     volumes:
       - ./models:/app/models:ro
       - ./config.yaml:/app/config.yaml:ro

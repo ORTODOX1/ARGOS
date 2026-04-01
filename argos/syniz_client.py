@@ -15,6 +15,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+import cv2
 import numpy as np
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
@@ -92,9 +93,10 @@ class SynizClient:
             Ranked hypotheses from the SYNIZ engine.
         """
         await self._ensure_connected()
-        assert self._ws is not None
+        if self._ws is None:
+            raise RuntimeError("WebSocket not connected — call connect() first")
 
-        _, buf = __import__("cv2").imencode(".png", image)
+        _, buf = cv2.imencode(".png", image)
         payload = json.dumps({
             "type": "analyse",
             "image_b64": base64.b64encode(buf.tobytes()).decode(),
