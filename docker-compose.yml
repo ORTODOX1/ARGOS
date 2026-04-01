@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  argos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: argos-core
+    environment:
+      ARGOS_NEO4J_URI: bolt://neo4j:7687
+      ARGOS_NEO4J_USER: neo4j
+      ARGOS_NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
+      ARGOS_SYNIZ__WS_ENDPOINT: wss://syniz-backend:8443/v1/ws
+      ARGOS_EDGE__EXECUTION_PROVIDER: CPUExecutionProvider
+    volumes:
+      - ./models:/app/models:ro
+      - ./config.yaml:/app/config.yaml:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - argos-net
+    restart: unless-stopped
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: argos-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-changeme}
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p ${NEO4J_PASSWORD:-changeme} 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - argos-net
+    restart: unless-stopped
+
+  syniz-backend:
+    image: ghcr.io/ortodox1/syniz:latest
+    container_name: argos-syniz
+    environment:
+      SYNIZ_PORT: "8443"
+      SYNIZ_NEO4J_URI: bolt://neo4j:7687
+    ports:
+      - "8443:8443"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - argos-net
+    restart: unless-stopped
+
+volumes:
+  neo4j-data:
+
+networks:
+  argos-net:
+    driver: bridge

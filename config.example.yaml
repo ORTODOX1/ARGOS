@@ -1,0 +1,47 @@
+# ARGOS Configuration
+# Copy to config.yaml and adjust for your environment.
+
+# --- Camera settings ---
+camera:
+  device_id: 0                # V4L2 device index
+  width: 1920
+  height: 1080
+  fps: 30
+  exposure_auto: true
+  white_balance_k: 5500       # Colour temperature in Kelvin
+
+# --- Edge processor (ONNX Runtime) ---
+edge:
+  detector_model_path: "models/defect_detector_v3.onnx"
+  classifier_model_path: "models/severity_classifier_v2.onnx"
+  execution_provider: "CUDAExecutionProvider"  # or CPUExecutionProvider
+  confidence_threshold: 0.45
+  nms_iou_threshold: 0.50
+  input_size: [640, 640]
+
+# --- SYNIZ TRIZ engine ---
+syniz:
+  ws_endpoint: "wss://syniz.fincantieri.internal/v1/ws"
+  api_key: ""                 # Set via ARGOS_SYNIZ__API_KEY env var
+  timeout_s: 30.0
+  max_reconnect_attempts: 5
+
+# --- POSEIDON-DIAG CAN bus ---
+poseidon:
+  can_interface: "can0"
+  can_bustype: "socketcan"
+  can_bitrate: 250000
+  j1939_source_address: 0xFE
+
+# --- ROS 2 topics ---
+ros:
+  image_topic: "/argos/camera/image_raw"
+  defect_topic: "/argos/defects"
+  odometry_topic: "/argos/odom"
+  health_topic: "/argos/health"
+
+# --- External services ---
+neo4j_uri: "bolt://localhost:7687"
+neo4j_user: "neo4j"
+neo4j_password: ""            # Set via ARGOS_NEO4J_PASSWORD env var
+aegis_dashboard_url: "https://aegis.fincantieri.internal/api/v2"
