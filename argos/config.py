@@ -43,7 +43,7 @@ class SynizConfig(BaseSettings):
 
     model_config = {"env_prefix": "ARGOS_SYNIZ_"}
 
-    ws_endpoint: str = "wss://syniz.fincantieri.internal/v1/ws"
+    ws_endpoint: str = "ws://localhost:8000/ws"
     api_key: str = Field("", description="Bearer token for SYNIZ gateway")
     timeout_s: float = 30.0
     max_reconnect_attempts: int = 5
@@ -61,7 +61,7 @@ class PoseidonConfig(BaseSettings):
 
 
 class RosConfig(BaseSettings):
-    """ROS 2 topic names used by ARGOS."""
+    """Reserved ROS 2 topic names. No ROS node exists in this repository yet."""
 
     model_config = {"env_prefix": "ARGOS_ROS_"}
 
@@ -76,12 +76,12 @@ class ArgosSettings(BaseSettings):
 
     model_config = {"env_prefix": "ARGOS_"}
 
-    camera: CameraConfig = CameraConfig()
-    edge: EdgeProcessorConfig = EdgeProcessorConfig()
-    syniz: SynizConfig = SynizConfig()
-    poseidon: PoseidonConfig = PoseidonConfig()
-    ros: RosConfig = RosConfig()
+    camera: CameraConfig = Field(default_factory=CameraConfig)
+    edge: EdgeProcessorConfig = Field(default_factory=EdgeProcessorConfig)
+    syniz: SynizConfig = Field(default_factory=SynizConfig)
+    poseidon: PoseidonConfig = Field(default_factory=PoseidonConfig)
+    ros: RosConfig = Field(default_factory=RosConfig)
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = ""
-    aegis_dashboard_url: str = "https://aegis.fincantieri.internal/api/v2"
+    aegis_dashboard_url: str = "http://localhost:5173/api/v2"

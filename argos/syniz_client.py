@@ -18,7 +18,7 @@ from typing import Any
 import cv2
 import numpy as np
 import websockets
-from websockets.legacy.client import WebSocketClientProtocol
+from websockets.asyncio.client import ClientConnection
 
 from argos.config import SynizConfig
 
@@ -45,22 +45,22 @@ class SynizClient:
     """
 
     config: SynizConfig = field(default_factory=SynizConfig)
-    _ws: WebSocketClientProtocol | None = field(default=None, init=False, repr=False)
+    _ws: ClientConnection | None = field(default=None, init=False, repr=False)
     _attempt: int = field(default=0, init=False, repr=False)
 
     async def connect(self) -> None:
         """Establish or re-establish the WebSocket connection."""
-        extra_headers = {"Authorization": f"Bearer {self.config.api_key}"}
+        headers = {"Authorization": f"Bearer {self.config.api_key}"}
         self._ws = await websockets.connect(
             self.config.ws_endpoint,
-            extra_headers=extra_headers,
+            additional_headers=headers,
             open_timeout=self.config.timeout_s,
         )
         self._attempt = 0
         logger.info("Connected to SYNIZ at %s", self.config.ws_endpoint)
 
     async def _ensure_connected(self) -> None:
-        if self._ws is None or self._ws.closed:
+        if self._ws is None or self._ws.close_code is not None:
             while self._attempt < self.config.max_reconnect_attempts:
                 try:
                     await self.connect()
@@ -119,6 +119,6 @@ class SynizClient:
 
     async def close(self) -> None:
         """Gracefully close the WebSocket connection."""
-        if self._ws and not self._ws.closed:
+        if self._ws and self._ws.close_code is None:
             await self._ws.close()
             logger.info("SYNIZ connection closed")

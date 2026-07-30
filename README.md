@@ -1,10 +1,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Status-In_Development-orange?style=for-the-badge" alt="Status">
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/ROS_2-22314E?style=for-the-badge&logo=ros&logoColor=white" alt="ROS 2">
-  <img src="https://img.shields.io/badge/ONNX-005CED?style=for-the-badge&logo=onnx&logoColor=white" alt="ONNX">
+  <img src="https://img.shields.io/badge/ONNX_Runtime-005CED?style=for-the-badge&logo=onnx&logoColor=white" alt="ONNX Runtime">
 </p>
 
 <h1 align="center">ARGOS</h1>
@@ -13,6 +11,30 @@
 <p align="center">
   <em>Edge AI + machine vision + TRIZ problem-solving for maritime inspection tasks<br>where humans should not go</em>
 </p>
+
+---
+
+> ### Status: design document + Python skeleton
+>
+> The repository contains **ten Python modules and 23 unit tests**. There is no
+> robot, no trained model, no simulation and no field data. Concretely:
+>
+> | Described below | In the repository |
+> |---|---|
+> | ROS 2 robot framework | **absent** — four unused topic-name strings in `argos/config.py` |
+> | Rust CAN/NMEA stack | **absent** — the CAN bridge is Python + `python-can` |
+> | Gazebo simulation, `docker-compose.sim.yml` | **absent** |
+> | AEGIS-MONITOR dashboard | **absent** — no frontend code |
+> | NautilusQuant 3-bit quantization | **absent** — `argos/vision/detector.py` has an INT8 identity-passthrough stub |
+> | Neo4j knowledge graph queries | **absent** — connection settings only, no query code |
+> | SHAP explainability | **absent** — the field is filled from `argmax` of an auxiliary head |
+> | TRITON-ML RUL estimation | **absent** |
+> | PDF inspection reports | **absent** — `argos/report.py` raises `NotImplementedError` |
+> | Trained defect-detection models | **absent** — no ONNX weights are distributed |
+>
+> What does work: the detector/classifier wrappers around ONNX Runtime, the
+> J1939 CAN decoder, the SYNIZ WebSocket client, the JSON report builder and
+> the inspection loop that ties them together — given a model file you supply.
 
 ---
 
@@ -85,24 +107,33 @@ ARGOS addresses this by combining edge-deployed machine vision with an inventive
 
 ### 1. Edge Vision (NautilusQuant)
 
-The robot runs machine vision models compressed to 3-bit precision using NautilusQuant's deterministic golden ratio quantization. This enables real-time inference on low-power edge processors without GPU:
+**Planned.** The intent is to run vision models quantized with
+[NautilusQuant](https://github.com/hermandoronin/NautilusQuant) so inference fits
+on a low-power edge processor without a GPU. Today `argos/vision/detector.py`
+loads a plain ONNX model and `NautilusQuantLUT` is an identity-passthrough stub;
+no quantized model and no export path exist yet. Target defect classes:
 
 - **Defect detection**: corrosion, cracks, coating breakdown, weld defects, pitting
 - **Biofouling classification**: barnacles, algae, tubeworms, slime (severity grading)
 - **Structural assessment**: plate deformation, bracket failure, stiffener buckling
 - **Leak detection**: oil sheen, water ingress, condensation patterns
 
-The 512-byte lookup table and zero-overhead quantization make NautilusQuant ideal for deterministic inference on safety-critical embedded hardware where reproducibility is mandatory.
+The reason for choosing NautilusQuant over a random-rotation scheme is
+determinism — a fixed rotation ROM instead of a PRNG-derived matrix — which
+matters when a class surveyor has to reproduce a result. That integration is not
+implemented here.
 
 ### 2. Known Defect Path (TRITON-ML)
 
 When the vision system detects a recognized defect pattern:
 
-1. Classify defect type and severity using TRITON-ML models
-2. Cross-reference with ship's maintenance history (Neo4j knowledge graph)
-3. Estimate remaining useful life of the affected component
-4. Generate inspection report with SHAP explainability
-5. Push alert to AEGIS-MONITOR operator dashboard
+1. Classify defect type and severity with a local ONNX classification head — **implemented** (`argos/vision/classifier.py`)
+2. Build a JSON inspection report with detections, confidence and GPS position — **implemented** (`argos/report.py`)
+3. POST the report to a dashboard endpoint over HTTP — **implemented** (`argos/inspector.py`)
+4. Cross-reference the ship's maintenance history in a Neo4j graph — **planned**
+5. Estimate remaining useful life via TRITON-ML — **planned**
+6. Attach real SHAP attributions instead of the current argmax placeholder — **planned**
+7. Render the report as a PDF — **planned**, `ReportGenerator.render_pdf` raises `NotImplementedError`
 
 ### 3. Unknown Situation Path (SYNIZ)
 
@@ -110,7 +141,7 @@ When the robot encounters something outside its training distribution:
 
 1. Anomaly detector flags the observation as novel
 2. Image, sensor context, and location are packaged as a SYNIZ task
-3. 50 TRIZ agents debate the observation across multiple hypotheses:
+3. The SYNIZ swarm debates the observation across multiple hypotheses:
    - What physical process could cause this pattern?
    - Which TRIZ contradiction does it represent?
    - What is the Ideal Final Result for this inspection scenario?
@@ -118,11 +149,17 @@ When the robot encounters something outside its training distribution:
    - Additional sensor readings to collect
    - Alternative inspection angles
    - Hypothesis for shore-side expert review
-5. Robot executes the recommendation and logs results back to the knowledge graph
+5. The recommendation is returned to the inspection loop (the knowledge-graph
+   write-back is planned, not implemented)
+
+Implemented: the WebSocket client, the request encoding and the hypothesis
+parsing (`argos/syniz_client.py`). It needs a running SYNIZ instance.
 
 ### 4. Sensor Fusion (POSEIDON-DIAG)
 
-The robot integrates with the ship's existing instrumentation via CAN bus and NMEA 2000:
+`argos/poseidon_bridge.py` decodes four J1939 PGNs (engine RPM, exhaust
+temperature, oil pressure, coolant temperature) over `python-can` — implemented
+and unit-tested. NMEA 2000, vibration and sonar are planned:
 
 - Engine parameters (RPM, temperatures, pressures) provide operational context
 - Vibration data from ship's accelerometers correlates with visual findings
@@ -145,14 +182,17 @@ The robot integrates with the ship's existing instrumentation via CAN bus and NM
 
 ## Edge Hardware Targets
 
-| Platform | Use Case | Inference |
-|---|---|---|
-| NVIDIA Jetson Orin Nano | Primary vision processor | NautilusQuant 3-bit ONNX, 30+ FPS |
-| Intel Movidius Myriad X | Low-power secondary | OpenVINO INT8, 15 FPS |
-| Coral Edge TPU | Ultra-low power | TFLite quantized, 10 FPS |
-| Hailo-8 | High-throughput | 26 TOPS at 2.5W |
+Intended targets. **Nothing has been benchmarked on any of them** — no frame
+rate below is a measurement.
 
-All models are exported via ONNX from TRITON-ML training pipeline, then compressed with NautilusQuant for deployment.
+| Platform | Use Case | Planned runtime |
+|---|---|---|
+| NVIDIA Jetson Orin Nano | Primary vision processor | ONNX Runtime, CUDA EP |
+| Intel Movidius Myriad X | Low-power secondary | OpenVINO |
+| Coral Edge TPU | Ultra-low power | TFLite |
+| Hailo-8 | High-throughput | HailoRT |
+
+The ONNX export path from a training pipeline does not exist yet either.
 
 ---
 
@@ -162,28 +202,28 @@ ARGOS is not a standalone system. It is the physical embodiment of a complete ma
 
 | Component | Role in ARGOS |
 |---|---|
-| [**NautilusQuant**](https://github.com/ORTODOX1/NautilusQuant) | Model compression for edge inference (3-bit, deterministic, 512-byte LUT) |
-| [**SYNIZ**](https://github.com/ORTODOX1/SYNIZ) | TRIZ-based reasoning when encountering unknown defects or novel situations |
-| [**TRITON-ML**](https://github.com/ORTODOX1/TRITON-ML) | Predictive maintenance models (defect classification, RUL estimation) |
-| [**POSEIDON-DIAG**](https://github.com/ORTODOX1/POSEIDON-DIAG) | Ship systems interface (CAN/J1939/NMEA 2000 sensor data fusion) |
-| [**AEGIS-MONITOR**](https://github.com/ORTODOX1/AEGIS-MONITOR) | Operator dashboard (live video feed, 3D inspection map, alarm management) |
+| [**NautilusQuant**](https://github.com/hermandoronin/NautilusQuant) | Planned model compression for edge inference (deterministic rotation, ~1.9 KB ROM) |
+| [**SYNIZ**](https://github.com/hermandoronin/SYNIZ) | TRIZ-based reasoning when encountering unknown defects or novel situations |
+| [**TRITON-ML**](https://github.com/hermandoronin/TRITON-ML) | Predictive maintenance models (defect classification, RUL estimation) |
+| [**POSEIDON-DIAG**](https://github.com/hermandoronin/POSEIDON-DIAG) | Ship systems interface (CAN/J1939/NMEA 2000 sensor data fusion) |
+| [**AEGIS-MONITOR**](https://github.com/hermandoronin/AEGIS-MONITOR) | Operator dashboard (live video feed, 3D inspection map, alarm management) |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Robot Framework | ROS 2 Humble (navigation, sensor drivers, SLAM) |
-| Vision | OpenCV, ONNX Runtime, NautilusQuant compression |
-| Edge Processor | NVIDIA Jetson Orin Nano / Hailo-8 |
-| Communication | CAN bus (J1939/NMEA 2000), 4G/5G, acoustic modem (underwater) |
-| Backend | Python 3.11+, FastAPI, Neo4j |
-| Problem Solving | SYNIZ (50 TRIZ agents, Graphiti memory) |
-| ML Pipeline | PyTorch, XGBoost, ONNX export, SHAP |
-| Dashboard | React, TypeScript, Three.js, WebSocket |
-| Systems Interface | Rust (POSEIDON-DIAG CAN/NMEA stack) |
-| Deployment | Docker Compose, ROS 2 launch files |
+| Layer | Technology | In this repo |
+|---|---|---|
+| Language | Python 3.11+ | yes |
+| Vision | OpenCV, ONNX Runtime | yes (wrappers; no model weights) |
+| CAN interface | `python-can`, J1939 PGN decoding | yes |
+| SYNIZ client | `websockets` | yes |
+| Config | pydantic-settings, YAML | yes |
+| Deployment | Docker Compose (ARGOS + Neo4j) | yes |
+| Robot framework | ROS 2 | no — planned |
+| Knowledge graph queries | Neo4j | no — connection settings only |
+| ML training / ONNX export | PyTorch, SHAP | no — planned |
+| Operator dashboard | React, Three.js | no — separate project |
 
 ---
 
@@ -196,38 +236,54 @@ Remote inspection technologies are increasingly accepted by major classification
 - **Bureau Veritas**: NI 668 — Guidelines for remote surveys and inspections
 - **IACS**: Recommendation 42 — Guidelines for use of remote inspection techniques
 
-ARGOS is designed to generate inspection reports compatible with these frameworks. All detections include confidence scores, SHAP explainability, and full sensor context for surveyor review.
+ARGOS is *designed* to generate reports compatible with these frameworks: every
+detection carries a confidence score and sensor context. It has not been
+submitted to, reviewed by or accepted by any classification society, and the
+explainability field is currently a placeholder, not a SHAP attribution.
 
 ---
 
 ## Quick Start
 
 ```bash
-# Clone
-git clone https://github.com/ORTODOX1/ARGOS.git
+git clone https://github.com/hermandoronin/ARGOS.git
 cd ARGOS
 
-# Simulation mode (no robot hardware required)
-docker-compose -f docker-compose.sim.yml up -d
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 
-# This starts:
-#   - Gazebo simulation with ship hull model
-#   - ARGOS vision pipeline with sample defect images
-#   - SYNIZ backend for unknown defect reasoning
-#   - AEGIS-MONITOR dashboard at http://localhost:5173
+# Lint, type-check and run the unit tests -- this is what CI runs
+ruff check argos/ tests/
+mypy argos/ --ignore-missing-imports
+pytest tests/ -v
 ```
+
+Running the inspection loop needs two things this repository does not ship: an
+ONNX detector/classifier model under `models/`, and a camera:
+
+```bash
+cp config.example.yaml config.yaml   # then edit paths and endpoints
+python -m argos --config config.yaml --interval 5
+```
+
+`docker-compose.yml` brings up ARGOS and Neo4j. There is no simulation compose
+file and no Gazebo environment — both are on the roadmap.
 
 ---
 
 ## Roadmap
 
 - [x] System architecture and ecosystem integration design
-- [x] NautilusQuant edge inference pipeline (ONNX 3-bit export)
-- [ ] ROS 2 robot framework with simulated hull inspection
+- [x] Inspection loop skeleton: detector, classifier, report builder, CLI
+- [x] POSEIDON-DIAG CAN bridge — J1939 PGN decoding over `python-can`
+- [x] SYNIZ WebSocket client for unknown-defect escalation
+- [ ] NautilusQuant edge inference pipeline — currently an identity-passthrough stub
 - [ ] Defect detection model training (corrosion, cracks, fouling)
-- [ ] SYNIZ integration for unknown defect reasoning
+- [ ] PDF report export — `ReportGenerator.render_pdf` raises `NotImplementedError`
+- [ ] Real SHAP attributions instead of the argmax placeholder
+- [ ] Neo4j knowledge-graph read/write
+- [ ] ROS 2 robot framework with simulated hull inspection
 - [ ] Gazebo simulation environment (ship hull, ballast tank)
-- [ ] POSEIDON-DIAG CAN bridge for sensor fusion
 - [ ] AEGIS-MONITOR live inspection view
 - [ ] Field trials with magnetic crawler prototype
 
@@ -241,4 +297,4 @@ Marine engineer with 3+ years of hands-on ship power plant maintenance. I have c
 
 ## License
 
-MIT
+MIT — see [`LICENSE`](LICENSE).

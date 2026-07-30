@@ -22,7 +22,7 @@ from argos.config import ArgosSettings
 from argos.poseidon_bridge import PoseidonBridge
 from argos.report import InspectionReport, ReportGenerator
 from argos.syniz_client import SynizClient
-from argos.vision.classifier import DefectClassifier, Severity
+from argos.vision.classifier import DefectClassifier
 from argos.vision.detector import DefectDetector, Detection
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class InspectionEngine:
         cap.release()
         if not ret or frame is None:
             raise RuntimeError("Camera capture failed")
-        return frame
+        return np.asarray(frame)
 
     def _is_unknown(self, det: Detection) -> bool:
         """Heuristic: if detector confidence is below ceiling, treat as unknown."""
@@ -101,7 +101,7 @@ class InspectionEngine:
             SYNIZ hypotheses for unknown anomalies.
         """
         frame = self._capture_frame()
-        timestamp = dt.datetime.now(dt.timezone.utc)
+        timestamp = dt.datetime.now(dt.UTC)
         sensor_ctx = self._poseidon.to_context_dict(
             self._poseidon.read_snapshot()
         )

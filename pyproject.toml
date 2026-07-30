@@ -7,10 +7,10 @@ name = "argos"
 version = "0.4.1"
 description = "Autonomous Robot for General Onboard Surveillance -- ship inspection system"
 readme = "README.md"
-license = {text = "Proprietary"}
+license = {text = "MIT"}
 requires-python = ">=3.11"
 authors = [
-    {name = "Fincantieri Digital", email = "digital@fincantieri.it"},
+    {name = "Herman Doronin", email = "herherman030303@gmail.com"},
 ]
 keywords = ["maritime", "inspection", "defect-detection", "onnx", "robotics"]
 classifiers = [
@@ -24,7 +24,7 @@ dependencies = [
     "onnxruntime>=1.17.0",
     "opencv-python>=4.9.0",
     "python-can>=4.3.0",
-    "websockets>=12.0",
+    "websockets>=14.0",
     "fastapi>=0.110.0",
     "pydantic-settings>=2.2.0",
     "pydantic>=2.6.0",
@@ -51,5 +51,6 @@ line-length = 100
 
 [tool.mypy]
 python_version = "3.11"
+plugins = ["pydantic.mypy"]
 strict = true
 warn_return_any = true

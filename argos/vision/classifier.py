@@ -7,9 +7,10 @@ grade using a lightweight ONNX classification head.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Sequence
+from typing import ClassVar
 
 import cv2
 import numpy as np
@@ -47,14 +48,14 @@ class DefectClassifier:
         Edge processor configuration pointing to the classifier ONNX model.
     """
 
-    _SEVERITY_MAP: dict[int, Severity] = {
+    _SEVERITY_MAP: ClassVar[dict[int, Severity]] = {
         0: Severity.MINOR,
         1: Severity.MODERATE,
         2: Severity.SEVERE,
         3: Severity.CRITICAL,
     }
 
-    _SHAP_FEATURES: list[str] = [
+    _SHAP_FEATURES: ClassVar[list[str]] = [
         "texture_entropy",
         "edge_density",
         "colour_deviation",
@@ -123,4 +124,4 @@ class DefectClassifier:
 def _softmax(x: np.ndarray) -> np.ndarray:
     """Numerically stable softmax."""
     e = np.exp(x - np.max(x))
-    return e / e.sum()
+    return np.asarray(e / e.sum(), dtype=np.float32)

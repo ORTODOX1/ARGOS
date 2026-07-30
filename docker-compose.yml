@@ -10,8 +10,11 @@ services:
       ARGOS_NEO4J_URI: bolt://neo4j:7687
       ARGOS_NEO4J_USER: neo4j
       ARGOS_NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
-      ARGOS_SYNIZ_WS_ENDPOINT: wss://syniz-backend:8443/v1/ws
+      # Point this at a SYNIZ instance you run yourself (see hermandoronin/SYNIZ).
+      ARGOS_SYNIZ_WS_ENDPOINT: ${ARGOS_SYNIZ_WS_ENDPOINT:-ws://localhost:8000/ws}
       ARGOS_EDGE_EXECUTION_PROVIDER: CPUExecutionProvider
+    # Provide these yourself: ONNX models are not distributed with this repo,
+    # and config.yaml is created from config.example.yaml.
     volumes:
       - ./models:/app/models:ro
       - ./config.yaml:/app/config.yaml:ro
@@ -40,21 +43,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - argos-net
-    restart: unless-stopped
-
-  syniz-backend:
-    image: ghcr.io/ortodox1/syniz:latest
-    container_name: argos-syniz
-    environment:
-      SYNIZ_PORT: "8443"
-      SYNIZ_NEO4J_URI: bolt://neo4j:7687
-    ports:
-      - "8443:8443"
-    depends_on:
-      neo4j:
-        condition: service_healthy
     networks:
       - argos-net
     restart: unless-stopped

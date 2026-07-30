@@ -8,9 +8,10 @@ Supports NautilusQuant INT8 models via a dequantisation look-up table.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Sequence
+from typing import ClassVar
 
 import cv2
 import numpy as np
@@ -55,7 +56,8 @@ class NautilusQuantLUT:
 
     def dequantize(self, tensor: np.ndarray) -> np.ndarray:
         """Convert INT8 tensor to FP32 using calibration parameters."""
-        return (tensor.astype(np.float32) - self.zero_point.astype(np.float32)) * self.scale
+        out = (tensor.astype(np.float32) - self.zero_point.astype(np.float32)) * self.scale
+        return np.asarray(out, dtype=np.float32)
 
 
 class DefectDetector:
@@ -67,7 +69,7 @@ class DefectDetector:
         Edge processor configuration including model path and thresholds.
     """
 
-    _LABEL_MAP: dict[int, DefectType] = {
+    _LABEL_MAP: ClassVar[dict[int, DefectType]] = {
         0: DefectType.CORROSION,
         1: DefectType.CRACK,
         2: DefectType.FOULING,

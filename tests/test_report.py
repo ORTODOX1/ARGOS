@@ -26,7 +26,7 @@ def sample_report(sample_defects):
     """Build a report from sample defects using ReportGenerator."""
     gen = ReportGenerator()
     return gen.build(
-        timestamp=dt.datetime(2025, 6, 15, 10, 30, 0, tzinfo=dt.timezone.utc),
+        timestamp=dt.datetime(2025, 6, 15, 10, 30, 0, tzinfo=dt.UTC),
         gps_lat=45.4315,
         gps_lon=12.3456,
         classified_defects=sample_defects,

@@ -2,7 +2,10 @@
 argos.__main__ -- CLI entry point for the ARGOS inspection system.
 
 Usage:
-    python -m argos --config config.yaml --mode simulation
+    python -m argos --config config.yaml
+
+Only live camera capture is implemented; there is no simulation or replay
+mode.
 """
 
 from __future__ import annotations
@@ -10,7 +13,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-import sys
 from pathlib import Path
 
 import yaml
@@ -30,15 +32,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--config", type=Path, default=Path("config.yaml"),
         help="Path to YAML configuration file (default: config.yaml)",
-    )
-    parser.add_argument(
-        "--mode", choices=["simulation", "live", "replay"],
-        default="simulation",
-        help="Inspection mode: simulation (fake frames), live (camera), replay (video file)",
-    )
-    parser.add_argument(
-        "--replay-file", type=Path, default=None,
-        help="Path to video file for replay mode",
     )
     parser.add_argument(
         "--interval", type=float, default=5.0,
@@ -76,20 +69,11 @@ async def run(args: argparse.Namespace) -> None:
     settings = load_config(args.config)
     engine = InspectionEngine(settings=settings)
 
-    if args.mode == "simulation":
-        logger.info("Starting in SIMULATION mode (interval=%.1fs)", args.interval)
-    elif args.mode == "live":
-        logger.info("Starting in LIVE mode with camera device")
-    elif args.mode == "replay":
-        if not args.replay_file or not args.replay_file.exists():
-            logger.error("Replay mode requires --replay-file with a valid path")
-            sys.exit(1)
-        logger.info("Starting in REPLAY mode from %s", args.replay_file)
+    logger.info("Starting live capture (interval=%.1fs)", args.interval)
 
     await engine.run_continuous(
         gps_lat=args.lat, gps_lon=args.lon,
         interval_s=args.interval,
-        mode=args.mode,
     )
 
 

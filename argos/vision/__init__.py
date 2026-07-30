@@ -9,10 +9,10 @@ from argos.vision.classifier import ClassifiedDefect, DefectClassifier, Severity
 from argos.vision.detector import DefectDetector, DefectType, Detection
 
 __all__ = [
-    "DefectDetector",
-    "DefectClassifier",
-    "Detection",
-    "DefectType",
-    "Severity",
     "ClassifiedDefect",
+    "DefectClassifier",
+    "DefectDetector",
+    "DefectType",
+    "Detection",
+    "Severity",
 ]

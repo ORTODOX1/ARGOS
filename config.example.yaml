@@ -33,14 +33,14 @@ poseidon:
   can_bitrate: 250000
   j1939_source_address: 0xFE
 
-# --- ROS 2 topics ---
+# --- ROS 2 topics (reserved; no ROS node exists in this repository yet) ---
 ros:
   image_topic: "/argos/camera/image_raw"
   defect_topic: "/argos/defects"
   odometry_topic: "/argos/odom"
   health_topic: "/argos/health"
 
-# --- External services ---
+# --- External services (neo4j_* are read but never queried yet) ---
 neo4j_uri: "bolt://localhost:7687"
 neo4j_user: "neo4j"
 neo4j_password: ""            # Set via ARGOS_NEO4J_PASSWORD env var

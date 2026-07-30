@@ -50,7 +50,7 @@ class PoseidonBridge:
 
     def __init__(self, config: PoseidonConfig | None = None) -> None:
         self._cfg = config or PoseidonConfig()
-        self._bus: can.Bus | None = None
+        self._bus: can.BusABC | None = None
 
     def open(self) -> None:
         """Initialise the CAN bus interface."""
@@ -90,7 +90,7 @@ class PoseidonBridge:
                 break
             pgn = self._pgn_from_id(msg.arbitration_id)
             if pgn in target_pgns:
-                collected[pgn] = msg.data
+                collected[pgn] = bytes(msg.data)
 
         return SensorSnapshot(
             engine_rpm=self._decode_rpm(collected.get(PGN_ENGINE_RPM, b"\x00" * 8)),
@@ -103,13 +103,13 @@ class PoseidonBridge:
     @staticmethod
     def _decode_rpm(data: bytes) -> float:
         """Decode engine RPM from EEC1 (SPN 190): bytes 3-4, 0.125 RPM/bit."""
-        raw = struct.unpack_from("<H", data, 3)[0]
+        raw: int = struct.unpack_from("<H", data, 3)[0]
         return raw * 0.125
 
     @staticmethod
     def _decode_temp(data: bytes) -> float:
         """Decode temperature SPN: first 2 bytes, 0.03125 deg/bit, offset -273."""
-        raw = struct.unpack_from("<H", data, 0)[0]
+        raw: int = struct.unpack_from("<H", data, 0)[0]
         return raw * 0.03125 - 273.0
 
     @staticmethod

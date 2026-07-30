@@ -7,8 +7,8 @@ sensor fusion, and escalates unknown anomalies to the SYNIZ TRIZ engine.
 """
 
 __version__ = "0.4.1"
-__author__ = "Fincantieri Digital"
-__license__ = "Proprietary"
+__author__ = "Herman Doronin"
+__license__ = "MIT"
 
 from argos.inspector import InspectionEngine
 
